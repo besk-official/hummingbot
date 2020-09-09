@@ -1,5 +1,31 @@
 ![Hummingbot](https://i.ibb.co/X5zNkKw/blacklogo-with-text.png)
 
+<img src="documentation/docs/assets/img/exmarkets_logo.png" alt="Exmarkets" width="90" />
+
+Running Exmarkets HM fork with Docker:
+
+Image can be found at: 
+https://hub.docker.com/r/beskofficial/hummingbot
+```
+docker run -it --name EXM10 --mount "type=bind,src=$(pwd)/conf_EXM_10,dst=/conf/" --mount "type=bind,src=$(pwd)/data_EXM_10,dst=/data/" beskofficial/hummingbot:latest
+```
+
+You need to create two folders with 777 rights.
+
+```
+src=$(pwd)/conf_EXM_10,dst=/conf/"
+src=$(pwd)/data_EXM_10,dst=/data/"
+```
+
+'src' is folder name on host machine.
+
+'dst' is folder name in HummingBot container.
+
+/conf folder will host config file.
+
+For further documentation on configuration and setup, read official HummingBot documentation, as this is fork and codebase is basically the same.
+
+
 ----
 [![Jenkins](https://jenkins-02.coinalpha.com/buildStatus/icon?job=hb_test-master_branch&subject=jenkins:master)](https://jenkins-02.coinalpha.com/job/hb_test-master_branch)
 [![Jenkins](https://jenkins-02.coinalpha.com/buildStatus/icon?job=hb_test-development_branch&subject=:development)](https://jenkins-02.coinalpha.com/job/hb_test-development_branch)
