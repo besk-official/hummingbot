@@ -2,6 +2,7 @@ import base64
 import hashlib
 import hmac
 import time
+import random
 from typing import (
     Any,
     Dict
@@ -15,7 +16,9 @@ class ExmarketsAuth:
         self.secret_key: str = secret_key
 
     def make_nonce(self) -> int:
-        nonce = int(round(time.time() * 100000))
+        timestamp = int(round(time.time() * 100000))
+        rand = random.randint(1, 999999)
+        nonce = int(str(timestamp) + str(rand))
         return nonce
 
     def make_timestamp(self) -> int:
