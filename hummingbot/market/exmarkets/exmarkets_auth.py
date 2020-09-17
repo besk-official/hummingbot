@@ -16,8 +16,8 @@ class ExmarketsAuth:
         self.secret_key: str = secret_key
 
     def make_nonce(self) -> int:
-        timestamp = int(round(time.time() * 100000))
-        rand = random.randint(1, 999999)
+        timestamp = int(round(time.time() * 1000))
+        rand = random.randint(1, 99)
         nonce = int(str(timestamp) + str(rand))
         return nonce
 

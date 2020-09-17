@@ -315,7 +315,7 @@ cdef class ExmarketsMarket(MarketBase):
         async with response_coro as response:
             if response.status != 200:
                 message = await response.json()
-                self.logger().error(f"Error body: {str(message)}. URL: {url}")
+                self.logger().error(f"Error body: {str(message)}, Query: {str(params)}, Body: {str(data)}, URL: {url}")
                 raise IOError(f"Error fetching data from {url}. HTTP status is {response.status}.")
             try:
                 parsed_response = await response.json()
@@ -393,8 +393,8 @@ cdef class ExmarketsMarket(MarketBase):
                                 min_order_size=Decimal(info["min_amount"]),
                                 max_order_size=Decimal(999999999),
                                 min_price_increment=Decimal(f"1e-{info['price_precision']}"),
-                                min_base_amount_increment=Decimal(f"1e-{info['quote_precision']}"),
-                                min_quote_amount_increment=Decimal(f"1e-{info['quote_precision']}"),
+                                min_base_amount_increment=Decimal(f"1e-{info['base_precision']}"),
+                                min_quote_amount_increment=Decimal(f"1e-{info['base_precision']}"),
                                 min_notional_size=Decimal(info["min_amount"]) * Decimal(info["last_price"] if info["last_price"] else 0))
                 )
             except Exception as e:
