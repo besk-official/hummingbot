@@ -891,8 +891,5 @@ cdef class ExmarketsMarket(MarketBase):
             notional_size = current_price * quantized_amount
         else:
             notional_size = price * quantized_amount
-        # Add 1% as a safety factor in case the prices changed while making the order.
-        if notional_size < trading_rule.min_notional_size * Decimal("1.01"):
-            return s_decimal_0
 
         return quantized_amount
