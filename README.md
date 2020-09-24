@@ -2,19 +2,28 @@
 
 <img src="documentation/docs/assets/img/exmarkets_logo.png" alt="Exmarkets" width="90" />
 
+Latest changelog:
+* new API endpoint for bulk cancelling, orders are now cancelled by ids and not for whole account
+* cancelling one order. Previously there was a situation then order instantly completed before cancelling, and HM crashes/hangs on cancelling. This is fixed now
+* available/total balance bug fixed. Now both balances are showed correctly
+* **USE WITH CAUTION** improved external price source API endpoint. Now price can be adjusted by provided percent (also negative), like this: https://exmarkets.com/api/cmc/v2/price/diamond/btc?adjust_percent=-2.2
+* **USE WITH CAUTION** Allowed bid_spread, ask_spread, order_level_spread to be negative
+* updated web socket ping/pong feature which caused reconnects. Further investigation needed
+
 Running Exmarkets HM fork with Docker:
 
 Image can be found at: 
 https://hub.docker.com/r/beskofficial/hummingbot
 ```
-docker run -it --name EXM10 --mount "type=bind,src=$(pwd)/conf_EXM_10,dst=/conf/" --mount "type=bind,src=$(pwd)/data_EXM_10,dst=/data/" beskofficial/hummingbot:latest
+docker run -it --name EXMLiq --mount "type=bind,src=$(pwd)/conf,dst=/conf/" --mount "type=bind,src=$(pwd)/data,dst=/data/" --mount "type=bind,src=$(pwd)/logs,dst=/logs/" beskofficial/hummingbot:latest
 ```
 
-You need to create two folders with 777 rights.
+You need to create three folders with 777 rights.
 
 ```
-src=$(pwd)/conf_EXM_10,dst=/conf/"
-src=$(pwd)/data_EXM_10,dst=/data/"
+src=$(pwd)/conf,dst=/conf/"
+src=$(pwd)/data,dst=/data/"
+src=$(pwd)/logs,dst=/logs/"
 ```
 
 'src' is folder name on host machine.
