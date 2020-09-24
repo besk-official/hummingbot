@@ -115,14 +115,14 @@ pure_market_making_config_map = {
                   prompt="How far away from the mid price do you want to place the "
                          "first bid order? (Enter 1 to indicate 1%) >>> ",
                   type_str="decimal",
-                  validator=lambda v: validate_decimal(v, 0, 100, inclusive=False),
+                  validator=lambda v: validate_decimal(v, -100, 100, inclusive=False),
                   prompt_on_new=True),
     "ask_spread":
         ConfigVar(key="ask_spread",
                   prompt="How far away from the mid price do you want to place the "
                          "first ask order? (Enter 1 to indicate 1%) >>> ",
                   type_str="decimal",
-                  validator=lambda v: validate_decimal(v, 0, 100, inclusive=False),
+                  validator=lambda v: validate_decimal(v, -100, 100, inclusive=False),
                   prompt_on_new=True),
     "minimum_spread":
         ConfigVar(key="minimum_spread",
@@ -194,7 +194,7 @@ pure_market_making_config_map = {
                          "orders? (Enter 1 to indicate 1%) >>> ",
                   required_if=lambda: pure_market_making_config_map.get("order_levels").value > 1,
                   type_str="decimal",
-                  validator=lambda v: validate_decimal(v, 0, 100, inclusive=False),
+                  validator=lambda v: validate_decimal(v, -100, 100, inclusive=False),
                   default=Decimal("1")),
     "inventory_skew_enabled":
         ConfigVar(key="inventory_skew_enabled",

@@ -343,7 +343,8 @@ cdef class ExmarketsMarket(MarketBase):
         if len(balances) > 0:
             for balance_entry in balances:
                 asset_name = balance_entry["currency"].lower()
-                balance = Decimal(balance_entry["available"])
+                balance = Decimal(balance_entry["total"])
+                balanceAvailable = Decimal(balance_entry["available"])
                 if balance == s_decimal_0:
                     continue
                 if asset_name not in new_available_balances:
@@ -351,13 +352,13 @@ cdef class ExmarketsMarket(MarketBase):
                 if asset_name not in new_balances:
                     new_balances[asset_name] = s_decimal_0
 
-                new_balances[asset_name] += balance
+                new_balances[asset_name] = balanceAvailable
                 new_available_balances[asset_name] = balance
 
             self._account_available_balances.clear()
-            self._account_available_balances = new_available_balances
+            self._account_available_balances = new_balances
             self._account_balances.clear()
-            self._account_balances = new_balances
+            self._account_balances = new_available_balances
 
     cdef object c_get_fee(self,
                           str base_currency,
@@ -778,10 +779,10 @@ cdef class ExmarketsMarket(MarketBase):
 
         except ExmarketsAPIError as e:
             order_state = e.error_payload.get("error").get("error")
-            if order_state == "ORDER_ALREADY_CANCELLED":
-                # order-state is canceled
+            if order_state == "ORDER_ALREADY_CANCELLED" or order_state == "ORDER_ALREADY_COMPLETED":
+                # order-state is canceled or completed
                 self.c_stop_tracking_order(tracked_order.client_order_id)
-                self.logger().info(f"The order {tracked_order.client_order_id} has been cancelled according"
+                self.logger().info(f"The order {tracked_order.client_order_id} has been cancelled/completed according"
                                    f" to order status API. state - {order_state}")
                 self.c_trigger_event(self.MARKET_ORDER_CANCELLED_EVENT_TAG,
                                      OrderCancelledEvent(self._current_timestamp,
@@ -807,15 +808,42 @@ cdef class ExmarketsMarket(MarketBase):
         return order_id
 
     async def cancel_all(self, timeout_seconds: float) -> List[CancellationResult]:
+        # open_orders = [o for o in self._in_flight_orders.values() if o.is_open]
+        # if len(open_orders) == 0:
+        #     return []
+        # cancel_order_ids = [o.exchange_order_id for o in open_orders]
+        # self.logger().debug(f"cancel_order_ids: {cancel_order_ids}")
+        # path_url = "trade/v1/orders/bulk"
+        # params = {"ids": ujson.dumps(cancel_order_ids, separators=(',', ':'))}
+        # cancellation_results = []
+        # try:
+        #     cancel_all_results = await self._api_request("delete", path_url=path_url, params=params, is_auth_required=True)
+
+        #     for item in cancel_all_results.get("buy", []):
+        #         cancellation_results.append(CancellationResult(item.id, True))
+        #         cancel_order_ids.remove(item.id)
+
+        #     for item in cancel_all_results.get("sell", []):
+        #         cancellation_results.append(CancellationResult(item.id, True))
+        #         cancel_order_ids.remove(item.id)
+
+        #     for id in cancel_order_ids:
+        #         cancellation_results.append(CancellationResult(item.id, False))
+        # except Exception as e:
+        #     self.logger().network(
+        #         f"Failed to cancel all orders: {cancel_order_ids}",
+        #         exc_info=True,
+        #         app_warning_msg=f"Failed to cancel all orders on Exmarkets. Check API key and network connection."
+        #     )
+        # return cancellation_results
         open_orders = [o for o in self._in_flight_orders.values() if o.is_open]
         if len(open_orders) == 0:
             return []
+        cancel_order_ids = [o.exchange_order_id for o in open_orders]
+        path_url = "trade/v1/orders/bulk"
+        params = {"ids": ','.join(cancel_order_ids)}
         successful_cancellations = []
         try:
-            path_url = "trade/v1/orders"
-            params = {
-                "market": "all",
-            }
             response = await self._api_request("delete", path_url=path_url, params=params, is_auth_required=True)
 
             for o in open_orders:

@@ -144,10 +144,10 @@ class ExmarketsOrderBookTracker(OrderBookTracker):
                     self.logger().debug("Processed order book snapshot for %s.", trading_pair)
             except asyncio.CancelledError:
                 raise
-            except Exception:
+            except Exception as e:
                 self.logger().network(
-                    f"Unexpected error tracking order book for {trading_pair}.",
+                    f"Unexpected error tracking order book for {trading_pair}. Exception: {str(e)}.",
                     exc_info=True,
-                    app_warning_msg="Unexpected error tracking order book. Retrying after 5 seconds."
+                    app_warning_msg="Pinged orderbook successfully."
                 )
-                await asyncio.sleep(5.0)
+                await asyncio.sleep(2.0)

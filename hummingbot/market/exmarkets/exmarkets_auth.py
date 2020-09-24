@@ -30,6 +30,7 @@ class ExmarketsAuth:
                          path_url: str,
                          args: Dict[str, Any] = None) -> Dict[str, Any]:
         query_string = urlencode(args)
+        query_string = query_string.replace("%2C", ",")
         signature = hmac.new(self.secret_key.encode("utf8"), query_string.encode("utf8"), hashlib.sha512)
         signature_b64 = base64.b64encode((self.api_key + ":" + signature.hexdigest()).encode("utf8")).decode("utf8")
 

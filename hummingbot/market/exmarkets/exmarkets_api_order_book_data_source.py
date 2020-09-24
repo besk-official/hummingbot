@@ -245,7 +245,7 @@ class ExmarketsAPIOrderBookDataSource(OrderBookTrackerDataSource):
                 except Exception as e:
                     self.logger().error(f"Unexpected error with WebSocket connection ({str(e)}). Retrying after 30 seconds...",
                                         exc_info=True)
-                    await asyncio.sleep(30.0)
+                    await asyncio.sleep(5.0)
 
     async def listen_for_order_book_diffs(self, ev_loop: asyncio.BaseEventLoop, output: asyncio.Queue):
         await self.listen_for_trades(ev_loop, output)
