@@ -459,9 +459,7 @@ cdef class ExmarketsMarket(MarketBase):
                 if order_update is None:
                     self.logger().network(
                         f"Error fetching status update for the order {tracked_order.client_order_id}: "
-                        f"{order_update}.",
-                        app_warning_msg=f"Could not fetch updates for the order {tracked_order.client_order_id}. "
-                                        f"The order has either been filled or canceled."
+                        f"{order_update}."
                     )
                     continue
 
@@ -558,9 +556,7 @@ cdef class ExmarketsMarket(MarketBase):
                 raise
             except Exception as e:
                 self.logger().network("Unexpected error while fetching account updates.",
-                                      exc_info=True,
-                                      app_warning_msg=f"Could not fetch account updates from Exmarkets. Error: {str(e)}"
-                                                      "Check API key and network connection.")
+                                      exc_info=True)
                 await asyncio.sleep(0.5)
 
     async def _trading_rules_polling_loop(self):
@@ -572,9 +568,7 @@ cdef class ExmarketsMarket(MarketBase):
                 raise
             except Exception:
                 self.logger().network("Unexpected error while fetching trading rules.",
-                                      exc_info=True,
-                                      app_warning_msg="Could not fetch new trading rules from Exmarkets. "
-                                                      "Check network connection.")
+                                      exc_info=True)
                 await asyncio.sleep(0.5)
 
     @property
@@ -672,8 +666,7 @@ cdef class ExmarketsMarket(MarketBase):
                 f"Error submitting buy {order_type_str} order to Exmarkets for "
                 f"{decimal_amount} {trading_pair} "
                 f"{decimal_price if order_type is OrderType.LIMIT else ''}.",
-                exc_info=True,
-                app_warning_msg=f"Failed to submit buy order to Exmarkets. Error: ({str(e)}) Check API key and network connection."
+                exc_info=True
             )
             self.c_trigger_event(self.MARKET_ORDER_FAILURE_EVENT_TAG,
                                  MarketOrderFailureEvent(self._current_timestamp, order_id, order_type))
@@ -744,8 +737,7 @@ cdef class ExmarketsMarket(MarketBase):
                 f"Error submitting sell {order_type_str} order to Exmarkets for "
                 f"{decimal_amount} {trading_pair} "
                 f"{decimal_price if order_type is OrderType.LIMIT else ''}.",
-                exc_info=True,
-                app_warning_msg=f"Failed to submit sell order to Exmarkets. Check API key and network connection."
+                exc_info=True
             )
             self.c_trigger_event(self.MARKET_ORDER_FAILURE_EVENT_TAG,
                                  MarketOrderFailureEvent(self._current_timestamp, order_id, order_type))
@@ -790,17 +782,13 @@ cdef class ExmarketsMarket(MarketBase):
             else:
                 self.logger().info(
                     f"Failed to cancel order {order_id}: {str(e)}",
-                    exc_info=True,
-                    app_warning_msg=f"Failed to cancel the order {order_id} on Exmarkets. "
-                                    f"Check API key and network connection."
+                    exc_info=True
                 )
 
         except Exception as e:
             self.logger().info(
                 f"Failed to cancel order {order_id}: {str(e)}",
-                exc_info=True,
-                app_warning_msg=f"Failed to cancel the order {order_id} on Exmarkets. "
-                                f"Check API key and network connection."
+                exc_info=True
             )
 
     cdef c_cancel(self, str trading_pair, str order_id):
@@ -851,8 +839,7 @@ cdef class ExmarketsMarket(MarketBase):
         except Exception as e:
             self.logger().network(
                 f"Failed to cancel all orders.",
-                exc_info=True,
-                app_warning_msg=f"Failed to cancel all orders on Exmarkets. Check API key and network connection."
+                exc_info=True
             )
         return successful_cancellations
 

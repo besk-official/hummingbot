@@ -113,8 +113,7 @@ class CoinmarginAPIOrderBookDataSource(OrderBookTrackerDataSource):
                 self._trading_pairs = []
                 self.logger().network(
                     "Error getting active exchange information.",
-                    exc_info=True,
-                    app_warning_msg="Error getting active exchange information. Check network connection."
+                    exc_info=True
                 )
         return self._trading_pairs
 
@@ -243,7 +242,7 @@ class CoinmarginAPIOrderBookDataSource(OrderBookTrackerDataSource):
                 except asyncio.CancelledError:
                     raise
                 except Exception as e:
-                    self.logger().error(f"Unexpected error with WebSocket connection ({str(e)}). Retrying after 30 seconds...",
+                    self.logger().error(f"Unexpected error with WebSocket connection ({str(e)}). Retrying after 5 seconds...",
                                         exc_info=True)
                     await asyncio.sleep(5.0)
 

@@ -102,8 +102,7 @@ class CoinmarginOrderBookTracker(OrderBookTracker):
             except Exception:
                 self.logger().network(
                     "Unexpected error routing order book messages.",
-                    exc_info=True,
-                    app_warning_msg="Unexpected error routing order book messages. Retrying after 5 seconds."
+                    exc_info=True
                 )
                 await asyncio.sleep(5.0)
 
@@ -117,15 +116,23 @@ class CoinmarginOrderBookTracker(OrderBookTracker):
             try:
                 message: OrderBookMessage = await message_queue.get()
 
-                bids = [
-                    OrderBookRow(float(item["price"]), float(item["amount"]), message.update_id)
-                    for item in message.content["bids"]
-                ]
+                bids = []
+                asks = []
+                try:
+                    bids = [
+                        OrderBookRow(float(item["price"]), float(item["amount"]), message.update_id)
+                        for item in message.content["bids"]
+                    ]
 
-                asks = [
-                    OrderBookRow(float(item["price"]), float(item["amount"]), message.update_id)
-                    for item in message.content["asks"]
-                ]
+                    asks = [
+                        OrderBookRow(float(item["price"]), float(item["amount"]), message.update_id)
+                        for item in message.content["asks"]
+                    ]
+                except Exception as e:
+                    self.logger().info(
+                        f"Got invalid orderbook message {str(message)}. Exception: {str(e)}.",
+                        exc_info=True
+                    )
 
                 if message.type is OrderBookMessageType.DIFF:
                     # Coinmargin websocket messages contain the entire order book state so they should be treated as snapshots
@@ -147,7 +154,6 @@ class CoinmarginOrderBookTracker(OrderBookTracker):
             except Exception as e:
                 self.logger().info(
                     f"Unexpected error tracking order book for {trading_pair}. Exception: {str(e)}.",
-                    exc_info=True,
-                    app_warning_msg="Pinged orderbook successfully."
+                    exc_info=True
                 )
-                await asyncio.sleep(2.0)
+                await asyncio.sleep(5.0)
