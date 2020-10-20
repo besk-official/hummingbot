@@ -50,10 +50,10 @@ from hummingbot.core.utils.async_utils import (
     safe_gather,
 )
 from hummingbot.logger import HummingbotLogger
-from hummingbot.market.exmarkets.exmarkets_api_order_book_data_source import ExmarketsAPIOrderBookDataSource
-from hummingbot.market.exmarkets.exmarkets_auth import ExmarketsAuth
-from hummingbot.market.exmarkets.exmarkets_in_flight_order import ExmarketsInFlightOrder
-from hummingbot.market.exmarkets.exmarkets_order_book_tracker import ExmarketsOrderBookTracker
+from hummingbot.market.coinmargin.coinmargin_api_order_book_data_source import CoinmarginAPIOrderBookDataSource
+from hummingbot.market.coinmargin.coinmargin_auth import CoinmarginAuth
+from hummingbot.market.coinmargin.coinmargin_in_flight_order import CoinmarginInFlightOrder
+from hummingbot.market.coinmargin.coinmargin_order_book_tracker import CoinmarginOrderBookTracker
 from hummingbot.market.trading_rule cimport TradingRule
 from hummingbot.market.market_base import (
     MarketBase,
@@ -66,20 +66,20 @@ from hummingbot.core.utils.estimate_fee import estimate_fee
 hm_logger = None
 s_decimal_0 = Decimal(0)
 TRADING_PAIR_SPLITTER = re.compile(r"^(\w+)(usdt|vndc|btc|eth|eur|usdc)$")
-EXMARKETS_ROOT_API = "https://exmarkets.com/api/"
+COINMARGIN_ROOT_API = "https://coinmargin.com/api/"
 
 
-class ExmarketsAPIError(IOError):
+class CoinmarginAPIError(IOError):
     def __init__(self, error_payload: Dict[str, Any]):
         super().__init__(str(error_payload))
         self.error_payload = error_payload
 
 
-cdef class ExmarketsMarketTransactionTracker(TransactionTracker):
+cdef class CoinmarginMarketTransactionTracker(TransactionTracker):
     cdef:
-        ExmarketsMarket _owner
+        CoinmarginMarket _owner
 
-    def __init__(self, owner: ExmarketsMarket):
+    def __init__(self, owner: CoinmarginMarket):
         super().__init__()
         self._owner = owner
 
@@ -88,7 +88,7 @@ cdef class ExmarketsMarketTransactionTracker(TransactionTracker):
         self._owner.c_did_timeout_tx(tx_id)
 
 
-cdef class ExmarketsMarket(MarketBase):
+cdef class CoinmarginMarket(MarketBase):
     MARKET_RECEIVED_ASSET_EVENT_TAG = MarketEvent.ReceivedAsset.value
     MARKET_BUY_ORDER_COMPLETED_EVENT_TAG = MarketEvent.BuyOrderCompleted.value
     MARKET_SELL_ORDER_COMPLETED_EVENT_TAG = MarketEvent.SellOrderCompleted.value
@@ -110,8 +110,8 @@ cdef class ExmarketsMarket(MarketBase):
         return hm_logger
 
     def __init__(self,
-                 exmarkets_api_key: str,
-                 exmarkets_secret_key: str,
+                 coinmargin_api_key: str,
+                 coinmargin_secret_key: str,
                  poll_interval: float = 5.0,
                  order_book_tracker_data_source_type: OrderBookTrackerDataSourceType =
                  OrderBookTrackerDataSourceType.EXCHANGE_API,
@@ -122,11 +122,11 @@ cdef class ExmarketsMarket(MarketBase):
         self._async_scheduler = AsyncCallScheduler(call_interval=0.5)
         self._data_source_type = order_book_tracker_data_source_type
         self._ev_loop = asyncio.get_event_loop()
-        self._exmarkets_auth = ExmarketsAuth(api_key=exmarkets_api_key, secret_key=exmarkets_secret_key)
+        self._coinmargin_auth = CoinmarginAuth(api_key=coinmargin_api_key, secret_key=coinmargin_secret_key)
         self._in_flight_orders = {}
         self._last_poll_timestamp = 0
         self._last_timestamp = 0
-        self._order_book_tracker = ExmarketsOrderBookTracker(
+        self._order_book_tracker = CoinmarginOrderBookTracker(
             data_source_type=order_book_tracker_data_source_type,
             trading_pairs=trading_pairs
         )
@@ -137,7 +137,7 @@ cdef class ExmarketsMarket(MarketBase):
         self._trading_required = trading_required
         self._trading_rules = {}
         self._trading_rules_polling_task = None
-        self._tx_tracker = ExmarketsMarketTransactionTracker(self)
+        self._tx_tracker = CoinmarginMarketTransactionTracker(self)
 
     @staticmethod
     def split_trading_pair(trading_pair: str) -> Optional[Tuple[str, str]]:
@@ -150,23 +150,23 @@ cdef class ExmarketsMarket(MarketBase):
 
     @staticmethod
     def convert_from_exchange_trading_pair(exchange_trading_pair: str) -> Optional[str]:
-        if ExmarketsMarket.split_trading_pair(exchange_trading_pair.replace("-", "")) is None:
+        if CoinmarginMarket.split_trading_pair(exchange_trading_pair.replace("-", "")) is None:
             return None
-        # Exmarkets uses lowercase (btc-usdt)
-        base_asset, quote_asset = ExmarketsMarket.split_trading_pair(exchange_trading_pair.replace("-", ""))
+        # Coinmargin uses lowercase (btc-usdt)
+        base_asset, quote_asset = CoinmarginMarket.split_trading_pair(exchange_trading_pair.replace("-", ""))
         return f"{base_asset.upper()}-{quote_asset.upper()}"
 
     @staticmethod
     def convert_to_exchange_trading_pair(hb_trading_pair: str) -> str:
-        # Exmarkets uses lowercase (btc-usdt)
+        # Coinmargin uses lowercase (btc-usdt)
         return hb_trading_pair.lower()
 
     @property
     def name(self) -> str:
-        return "exmarkets"
+        return "coinmargin"
 
     @property
-    def order_book_tracker(self) -> ExmarketsOrderBookTracker:
+    def order_book_tracker(self) -> CoinmarginOrderBookTracker:
         return self._order_book_tracker
 
     @property
@@ -178,7 +178,7 @@ cdef class ExmarketsMarket(MarketBase):
         return self._trading_rules
 
     @property
-    def in_flight_orders(self) -> Dict[str, ExmarketsInFlightOrder]:
+    def in_flight_orders(self) -> Dict[str, CoinmarginInFlightOrder]:
         return self._in_flight_orders
 
     @property
@@ -197,7 +197,7 @@ cdef class ExmarketsMarket(MarketBase):
 
     def restore_tracking_states(self, saved_states: Dict[str, Any]):
         self._in_flight_orders.update({
-            key: ExmarketsInFlightOrder.from_json(value)
+            key: CoinmarginInFlightOrder.from_json(value)
             for key, value in saved_states.items()
         })
 
@@ -210,7 +210,7 @@ cdef class ExmarketsMarket(MarketBase):
         self._shared_client = client
 
     async def get_active_exchange_markets(self) -> pd.DataFrame:
-        return await ExmarketsAPIOrderBookDataSource.get_active_exchange_markets()
+        return await CoinmarginAPIOrderBookDataSource.get_active_exchange_markets()
 
     cdef c_start(self, Clock clock, double timestamp):
         self._tx_tracker.c_start(clock, timestamp)
@@ -271,8 +271,8 @@ cdef class ExmarketsMarket(MarketBase):
                            data: Optional[Dict[str, Any]] = None,
                            is_auth_required: bool = False) -> Dict[str, Any]:
         args = {
-            "timestamp": self._exmarkets_auth.make_timestamp(),
-            "nonce": self._exmarkets_auth.make_nonce(),
+            "timestamp": self._coinmargin_auth.make_timestamp(),
+            "nonce": self._coinmargin_auth.make_nonce(),
         }
         self.logger().network(f"Making request {str(args['nonce'])} to {path_url}")
         if params is not None:
@@ -287,9 +287,9 @@ cdef class ExmarketsMarket(MarketBase):
         if method == "post":
             headers = {"Content-Type": "application/json"}
         if is_auth_required:
-            headers.update(self._exmarkets_auth.generate_headers(method, path_url, tempParams))
+            headers.update(self._coinmargin_auth.generate_headers(method, path_url, tempParams))
 
-        url = EXMARKETS_ROOT_API + path_url
+        url = COINMARGIN_ROOT_API + path_url
         client = await self._http_client()
 
         # aiohttp TestClient requires path instead of url
@@ -325,7 +325,7 @@ cdef class ExmarketsMarket(MarketBase):
             data = parsed_response
             if data is None:
                 self.logger().error(f"Error received from {url}. Response is {data}.")
-                raise ExmarketsAPIError({"error": parsed_response})
+                raise CoinmarginAPIError({"error": parsed_response})
             return data
 
     async def _update_balances(self):
@@ -369,7 +369,7 @@ cdef class ExmarketsMarket(MarketBase):
                           object price):
 
         is_maker = order_type is OrderType.LIMIT
-        return estimate_fee("exmarkets", is_maker)
+        return estimate_fee("coinmargin", is_maker)
 
     async def _update_trading_rules(self):
         cdef:
@@ -441,7 +441,7 @@ cdef class ExmarketsMarket(MarketBase):
                 exchange_order_id = tracked_order.exchange_order_id
                 try:
                     order_update = await self.get_order_status(exchange_order_id)
-                except ExmarketsAPIError as e:
+                except CoinmarginAPIError as e:
                     err_code = e.error_payload.get("error").get("err-code")
                     self.c_stop_tracking_order(tracked_order.client_order_id)
                     self.logger().info(f"The limit order {tracked_order.client_order_id} "
@@ -559,7 +559,7 @@ cdef class ExmarketsMarket(MarketBase):
             except Exception as e:
                 self.logger().network("Unexpected error while fetching account updates.",
                                       exc_info=True,
-                                      app_warning_msg=f"Could not fetch account updates from Exmarkets. Error: {str(e)}"
+                                      app_warning_msg=f"Could not fetch account updates from Coinmargin. Error: {str(e)}"
                                                       "Check API key and network connection.")
                 await asyncio.sleep(0.5)
 
@@ -573,7 +573,7 @@ cdef class ExmarketsMarket(MarketBase):
             except Exception:
                 self.logger().network("Unexpected error while fetching trading rules.",
                                       exc_info=True,
-                                      app_warning_msg="Could not fetch new trading rules from Exmarkets. "
+                                      app_warning_msg="Could not fetch new trading rules from Coinmargin. "
                                                       "Check network connection.")
                 await asyncio.sleep(0.5)
 
@@ -669,11 +669,11 @@ cdef class ExmarketsMarket(MarketBase):
             self.c_stop_tracking_order(order_id)
             order_type_str = "MARKET" if order_type == OrderType.MARKET else "LIMIT"
             self.logger().network(
-                f"Error submitting buy {order_type_str} order to Exmarkets for "
+                f"Error submitting buy {order_type_str} order to Coinmargin for "
                 f"{decimal_amount} {trading_pair} "
                 f"{decimal_price if order_type is OrderType.LIMIT else ''}.",
                 exc_info=True,
-                app_warning_msg=f"Failed to submit buy order to Exmarkets. Error: ({str(e)}) Check API key and network connection."
+                app_warning_msg=f"Failed to submit buy order to Coinmargin. Error: ({str(e)}) Check API key and network connection."
             )
             self.c_trigger_event(self.MARKET_ORDER_FAILURE_EVENT_TAG,
                                  MarketOrderFailureEvent(self._current_timestamp, order_id, order_type))
@@ -741,11 +741,11 @@ cdef class ExmarketsMarket(MarketBase):
             self.c_stop_tracking_order(order_id)
             order_type_str = "MARKET" if order_type is OrderType.MARKET else "LIMIT"
             self.logger().network(
-                f"Error submitting sell {order_type_str} order to Exmarkets for "
+                f"Error submitting sell {order_type_str} order to Coinmargin for "
                 f"{decimal_amount} {trading_pair} "
                 f"{decimal_price if order_type is OrderType.LIMIT else ''}.",
                 exc_info=True,
-                app_warning_msg=f"Failed to submit sell order to Exmarkets. Check API key and network connection."
+                app_warning_msg=f"Failed to submit sell order to Coinmargin. Check API key and network connection."
             )
             self.c_trigger_event(self.MARKET_ORDER_FAILURE_EVENT_TAG,
                                  MarketOrderFailureEvent(self._current_timestamp, order_id, order_type))
@@ -777,7 +777,7 @@ cdef class ExmarketsMarket(MarketBase):
                                      OrderCancelledEvent(self._current_timestamp,
                                                          tracked_order.client_order_id))
 
-        except ExmarketsAPIError as e:
+        except CoinmarginAPIError as e:
             order_state = e.error_payload.get("error").get("error")
             if order_state == "ORDER_ALREADY_CANCELLED" or order_state == "ORDER_ALREADY_COMPLETED":
                 # order-state is canceled or completed
@@ -791,7 +791,7 @@ cdef class ExmarketsMarket(MarketBase):
                 self.logger().info(
                     f"Failed to cancel order {order_id}: {str(e)}",
                     exc_info=True,
-                    app_warning_msg=f"Failed to cancel the order {order_id} on Exmarkets. "
+                    app_warning_msg=f"Failed to cancel the order {order_id} on Coinmargin. "
                                     f"Check API key and network connection."
                 )
 
@@ -799,7 +799,7 @@ cdef class ExmarketsMarket(MarketBase):
             self.logger().info(
                 f"Failed to cancel order {order_id}: {str(e)}",
                 exc_info=True,
-                app_warning_msg=f"Failed to cancel the order {order_id} on Exmarkets. "
+                app_warning_msg=f"Failed to cancel the order {order_id} on Coinmargin. "
                                 f"Check API key and network connection."
             )
 
@@ -833,7 +833,7 @@ cdef class ExmarketsMarket(MarketBase):
         #     self.logger().network(
         #         f"Failed to cancel all orders: {cancel_order_ids}",
         #         exc_info=True,
-        #         app_warning_msg=f"Failed to cancel all orders on Exmarkets. Check API key and network connection."
+        #         app_warning_msg=f"Failed to cancel all orders on Coinmargin. Check API key and network connection."
         #     )
         # return cancellation_results
         open_orders = [o for o in self._in_flight_orders.values() if o.is_open]
@@ -852,7 +852,7 @@ cdef class ExmarketsMarket(MarketBase):
             self.logger().network(
                 f"Failed to cancel all orders.",
                 exc_info=True,
-                app_warning_msg=f"Failed to cancel all orders on Exmarkets. Check API key and network connection."
+                app_warning_msg=f"Failed to cancel all orders on Coinmargin. Check API key and network connection."
             )
         return successful_cancellations
 
@@ -876,7 +876,7 @@ cdef class ExmarketsMarket(MarketBase):
                                 object trade_type,
                                 object price,
                                 object amount):
-        self._in_flight_orders[client_order_id] = ExmarketsInFlightOrder(
+        self._in_flight_orders[client_order_id] = CoinmarginInFlightOrder(
             client_order_id=client_order_id,
             exchange_order_id=exchange_order_id,
             trading_pair=trading_pair,

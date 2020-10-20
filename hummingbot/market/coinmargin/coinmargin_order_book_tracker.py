@@ -20,10 +20,10 @@ from hummingbot.core.data_type.order_book_tracker import (
 )
 from hummingbot.core.data_type.order_book_tracker_data_source import OrderBookTrackerDataSource
 from hummingbot.logger import HummingbotLogger
-from hummingbot.market.exmarkets.exmarkets_api_order_book_data_source import ExmarketsAPIOrderBookDataSource
+from hummingbot.market.coinmargin.coinmargin_api_order_book_data_source import CoinmarginAPIOrderBookDataSource
 
 
-class ExmarketsOrderBookTracker(OrderBookTracker):
+class CoinmarginOrderBookTracker(OrderBookTracker):
     _hobt_logger: Optional[HummingbotLogger] = None
 
     @classmethod
@@ -44,13 +44,13 @@ class ExmarketsOrderBookTracker(OrderBookTracker):
 
     @property
     def exchange_name(self) -> str:
-        return "exmarkets"
+        return "coinmargin"
 
     @property
     def data_source(self) -> OrderBookTrackerDataSource:
         if not self._data_source:
             if self._data_source_type is OrderBookTrackerDataSourceType.EXCHANGE_API:
-                self._data_source = ExmarketsAPIOrderBookDataSource(trading_pairs=self._trading_pairs)
+                self._data_source = CoinmarginAPIOrderBookDataSource(trading_pairs=self._trading_pairs)
             else:
                 raise ValueError(f"data_source_type {self._data_source_type} is not supported.")
         return self._data_source
@@ -128,7 +128,7 @@ class ExmarketsOrderBookTracker(OrderBookTracker):
                 ]
 
                 if message.type is OrderBookMessageType.DIFF:
-                    # Exmarkets websocket messages contain the entire order book state so they should be treated as snapshots
+                    # Coinmargin websocket messages contain the entire order book state so they should be treated as snapshots
                     order_book.apply_snapshot(bids, asks, message.update_id)
                     diff_messages_accepted += 1
 

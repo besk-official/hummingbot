@@ -164,6 +164,18 @@ global_config_map = {
                   required_if=using_exchange("exmarkets"),
                   is_secure=True,
                   is_connect_key=True),
+    "coinmargin_api_key":
+        ConfigVar(key="coinmargin_api_key",
+                  prompt="Enter your Coinmargin API key >>> ",
+                  required_if=using_exchange("coinmargin"),
+                  is_secure=True,
+                  is_connect_key=True),
+    "coinmargin_secret_key":
+        ConfigVar(key="coinmargin_secret_key",
+                  prompt="Enter your Coinmargin secret key >>> ",
+                  required_if=using_exchange("coinmargin"),
+                  is_secure=True,
+                  is_connect_key=True),
     "liquid_api_key":
         ConfigVar(key="liquid_api_key",
                   prompt="Enter your Liquid API key >>> ",

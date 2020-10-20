@@ -55,6 +55,10 @@ huobi_secret_key = os.getenv("HUOBI_SECRET_KEY")
 exmarkets_api_key = os.getenv("EXMARKETS_API_KEY")
 exmarkets_secret_key = os.getenv("EXMARKETS_SECRET_KEY")
 
+# Coinmargin Tests
+coinmargin_api_key = os.getenv("COINMARGIN_API_KEY")
+coinmargin_secret_key = os.getenv("COINMARGIN_SECRET_KEY")
+
 # Dolomite Tests
 dolomite_test_web3_private_key = os.getenv("DOLOMITE_TEST_PK")
 dolomite_test_web3_address = os.getenv("DOLOMITE_TEST_ADDR")

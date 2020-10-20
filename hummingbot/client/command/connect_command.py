@@ -15,6 +15,7 @@ OPTIONS = {
     "coinbase_pro",
     "huobi",
     "exmarkets",
+    "coinmargin",
     "liquid",
     "bittrex",
     "kucoin",

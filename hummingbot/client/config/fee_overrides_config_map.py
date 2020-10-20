@@ -22,6 +22,8 @@ fee_overrides_config_map = {
     "huobi_taker_fee": new_fee_config_var("huobi_taker_fee"),
     "exmarkets_maker_fee": new_fee_config_var("exmarkets_maker_fee"),
     "exmarkets_taker_fee": new_fee_config_var("exmarkets_taker_fee"),
+    "coinmargin_maker_fee": new_fee_config_var("coinmargin_maker_fee"),
+    "coinmargin_taker_fee": new_fee_config_var("coinmargin_taker_fee"),
     "liquid_maker_fee": new_fee_config_var("liquid_maker_fee"),
     "liquid_taker_fee": new_fee_config_var("liquid_taker_fee"),
     "bittrex_maker_fee": new_fee_config_var("bittrex_maker_fee"),

@@ -18,6 +18,7 @@ from hummingbot.market.kucoin.kucoin_market import KucoinMarket
 from hummingbot.market.coinbase_pro.coinbase_pro_market import CoinbaseProMarket
 from hummingbot.market.huobi.huobi_market import HuobiMarket
 from hummingbot.market.exmarkets.exmarkets_market import ExmarketsMarket
+from hummingbot.market.coinmargin.coinmargin_market import CoinmarginMarket
 from hummingbot.market.liquid.liquid_market import LiquidMarket
 from hummingbot.market.eterbase.eterbase_market import EterbaseMarket
 from hummingbot.market.market_base import MarketBase
@@ -58,6 +59,7 @@ MARKET_CLASSES = {
     "coinbase_pro": CoinbaseProMarket,
     "huobi": HuobiMarket,
     "exmarkets": ExmarketsMarket,
+    "coinmargin": CoinmarginMarket,
     "liquid": LiquidMarket,
     "radar_relay": RadarRelayMarket,
     "dolomite": DolomiteMarket,
@@ -310,6 +312,14 @@ class HummingbotApplication(*commands):
                                          order_book_tracker_data_source_type=OrderBookTrackerDataSourceType.EXCHANGE_API,
                                          trading_pairs=trading_pairs,
                                          trading_required=self._trading_required)
+            elif market_name == "coinmargin":
+                coinmargin_api_key = global_config_map.get("coinmargin_api_key").value
+                coinmargin_secret_key = global_config_map.get("coinmargin_secret_key").value
+                market = CoinmarginMarket(coinmargin_api_key,
+                                          coinmargin_secret_key,
+                                          order_book_tracker_data_source_type=OrderBookTrackerDataSourceType.EXCHANGE_API,
+                                          trading_pairs=trading_pairs,
+                                          trading_required=self._trading_required)
             elif market_name == "liquid":
                 liquid_api_key = global_config_map.get("liquid_api_key").value
                 liquid_secret_key = global_config_map.get("liquid_secret_key").value
