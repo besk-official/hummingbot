@@ -116,28 +116,22 @@ class ExmarketsOrderBookTracker(OrderBookTracker):
             try:
                 message: OrderBookMessage = await message_queue.get()
 
-                bids = []
-                asks = []
-                try:
+                if message.type is OrderBookMessageType.DIFF:
+                    # Exmarkets websocket messages contain the entire order book state so they should be treated as snapshots
                     bids = [
                         OrderBookRow(float(item["price"]), float(item["amount"]), message.update_id)
                         for item in message.content["bids"]
                     ]
-
                     asks = [
                         OrderBookRow(float(item["price"]), float(item["amount"]), message.update_id)
                         for item in message.content["asks"]
                     ]
-                except Exception as e:
-                    self.logger().info(
-                        f"Got invalid orderbook message {str(message)}. Exception: {str(e)}.",
-                        exc_info=True
-                    )
 
-                if message.type is OrderBookMessageType.DIFF:
-                    # Exmarkets websocket messages contain the entire order book state so they should be treated as snapshots
                     order_book.apply_snapshot(bids, asks, message.update_id)
                     diff_messages_accepted += 1
+
+                    del bids
+                    del asks
 
                     # Output some statistics periodically.
                     now: float = time.time()
@@ -147,7 +141,21 @@ class ExmarketsOrderBookTracker(OrderBookTracker):
                         diff_messages_accepted = 0
                     last_message_timestamp = now
                 elif message.type is OrderBookMessageType.SNAPSHOT:
+                    bids = [
+                        OrderBookRow(float(item[0]), float(item[1]), message.update_id)
+                        for item in message.content["bids"]
+                    ]
+
+                    asks = [
+                        OrderBookRow(float(item[0]), float(item[1]), message.update_id)
+                        for item in message.content["asks"]
+                    ]
+
                     order_book.apply_snapshot(bids, asks, message.update_id)
+
+                    del bids
+                    del asks
+
                     self.logger().debug("Processed order book snapshot for %s.", trading_pair)
             except asyncio.CancelledError:
                 raise
