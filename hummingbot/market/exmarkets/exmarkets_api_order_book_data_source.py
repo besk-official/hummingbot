@@ -205,8 +205,10 @@ class ExmarketsAPIOrderBookDataSource(OrderBookTrackerDataSource):
                         for item in exchange_data["markets"]
                     }
 
+            last_reconnect_timestamp: float = time.time()
             while True:
                 try:
+                    self.logger().network("Initializing socket connection.")
                     trading_pairs: List[str] = await self.get_trading_pairs()
                     async with websockets.connect(EXMARKETS_WS_URI) as ws:
                         ws: websockets.WebSocketClientProtocol = ws
@@ -234,17 +236,26 @@ class ExmarketsAPIOrderBookDataSource(OrderBookTrackerDataSource):
                                 )
                                 output.put_nowait(trade_message)
                             elif msgType == "market-orderbook":
+                                self.logger().network("Received orderbook update.")
                                 trading_pair = msg["data"]["market"]
                                 order_book_message: OrderBookMessage = ExmarketsOrderBook.diff_message_from_exchange(
                                     msg, metadata={"market": trading_pair}
                                 )
                                 output.put_nowait(order_book_message)
+
+                            now: float = time.time()
+                            if int(now / 1800.0) > int(last_reconnect_timestamp / 1800.0):
+                                self.logger().network("Orderbook: reconnecting to socket.")
+                                last_reconnect_timestamp = now
+                                raise Exception("Reconnect to socket")
+                            last_reconnect_timestamp = now
                 except asyncio.CancelledError:
+                    self._ws_running = False
                     raise
                 except Exception as e:
-                    self.logger().error(f"Unexpected error with WebSocket connection ({str(e)}). Retrying after 5 seconds...",
-                                        exc_info=True)
-                    await asyncio.sleep(5.0)
+                    self.logger().network(f"Exception thrown with WebSocket connection ({str(e)}). Retrying after 2 seconds...",
+                                          exc_info=True)
+                    await asyncio.sleep(2.0)
 
     async def listen_for_order_book_diffs(self, ev_loop: asyncio.BaseEventLoop, output: asyncio.Queue):
         await self.listen_for_trades(ev_loop, output)

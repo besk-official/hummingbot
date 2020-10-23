@@ -77,11 +77,11 @@ class ExmarketsOrderBookTracker(OrderBookTracker):
                     continue
                 message_queue: asyncio.Queue = self._tracking_message_queues[trading_pair]
                 # Check the order book's initial update ID. If it's larger, don't bother.
-                order_book: OrderBook = self._order_books[trading_pair]
+                # order_book: OrderBook = self._order_books[trading_pair]
 
-                if order_book.snapshot_uid > ob_message.update_id:
-                    messages_rejected += 1
-                    continue
+                # if order_book.snapshot_uid > ob_message.update_id:
+                #     messages_rejected += 1
+                #     continue
                 await message_queue.put(ob_message)
                 messages_accepted += 1
 
